@@ -9,39 +9,50 @@ see http://www2.cs.uh.edu/~panruowu/later.html
 * CUTLASS 2.1+
 
 ## Build
-On Linux, 
-```
+### Linux
+#### Clone Repo
+```console
 $ git clone git@github.com:Orgline/LATER.git
-$ cd LATER && mkdir build && cd build
+```
+#### Create Build Directory
+```console
+$ cd LATER
+$ mkdir -p build && cd build
+```
+#### Set Environment Variables
+```console
 $ export CUDACXX=/usr/local/cuda-10.1/bin/nvcc
 $ export CUDA_PATH=/usr/local/cuda-10.1
-$ export CUTLASS_DIR=<CUTLASS Diretory> 
-$ # for exmaple ~/cutlass-2.1.0
+$ export CUTLASS_DIR=$HOME/cutlass
+```
+Change the CUDACXX and CUDA_PATH environment variables to match
+your system's CUDA installation directory. Set the CUTLASS_DIR environment
+variable to match your system's CUTLASS installation directory. 
+
+#### Build
+```console
 $ cmake .. -DCMAKE_CUDA_FLAGS="-gencode=arch=compute_80,code=sm_80" -DCUDA_ARCH="Ampere"
 $ # On Volta, 75->70, Turing->Volta
 $ cmake --build .
 ```
-Change the CUDACXX and CUDA_PATH environment variables to match
-your system's CUDA installation directory. 
 
+### Windows 
 
-On Windows, 
-
-```
+```console
 $ git clone git@github.com:Orgline/LATER.git
 $ cd LATER && mkdir build && cd build
 $ cmake .. -A x64
 $ cmake --build .
 ```
 ## Run tests
-On Linux
-```
-$ cd test
+### Linux
+```console
+$ cd build/test
 $ ./test_qr 1 16384 16384 -check
 ```
 
-On Windows:
-```
+### Windows
+```console
 $ cd test/debug
 $ test_qr.exe 1 16384 16384 -check
 ```
