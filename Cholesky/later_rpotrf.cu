@@ -106,8 +106,8 @@ void later_rpotrf(char uplo, int n, float* A, int lda, float* work, __half* hwor
     }
 
     printf("Panel takes %f ms, update takes %f ms\n", chol_panel, chol_gemm);
-
-    printf("TFLOPS is %lf TFLOPS\n", 1.0 / 3.0 * n * n * n / (chol_gemm + chol_panel) / 1e9);
+    auto tflops = 1.0 / 3.0 * n * n * n / (chol_gemm + chol_panel) / 1e9;
+    printf("TFLOPS is %lf TFLOPS\n", tflops);
 
     cublasDestroy(ctxt.cublas_handle);
     cusolverDnDestroy(ctxt.cusolver_handle);

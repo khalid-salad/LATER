@@ -1,7 +1,7 @@
 include_directories(
         ../QR/include
-        /home/szhang/cutlass/include/
-        /home/szhang/cutlass/tools/util/include
+        $CUTLASS_DIR/include/
+        $CUTLASS_DIR/tools/util/include
 )
 
 configure_file(check_qr.jl check_qr.jl COPYONLY)
@@ -14,5 +14,5 @@ foreach(SRC ${TEST_SOURCES})
     add_executable(${NAME} "${NAME}.cu")
     set_property(TARGET ${NAME}
             PROPERTY CUDA_SEPARABLE_COMPILATION ON)
-    target_link_libraries(${NAME} qr utility evd ${CUDART_LIBRARY} ${CUBLAS_LIBRARY} ${CUSOLVER_LIBRARY})
+    target_link_libraries(${NAME} qr utility evd chol ${CUDART_LIBRARY} ${CUBLAS_LIBRARY} ${CUSOLVER_LIBRARY})
 endforeach()
