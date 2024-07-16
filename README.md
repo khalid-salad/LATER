@@ -56,6 +56,7 @@ $ ./test_potrf 1 16384 -check
 ```console
 $ cd test/debug
 $ test_qr.exe 1 16384 16384 -check
+$ test_qr.exe 1 16384 -check
 ```
 
 ## Tested GPUs and Platforms
