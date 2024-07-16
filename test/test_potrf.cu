@@ -1,16 +1,12 @@
 #include "LATER.h"
 
 int n;
-
-int algo;
-
 bool checkFlag = false;
 
 int parseArguments(int argc, char* argv[]) {
-    algo = atoi(argv[1]);
-    n = atoi(argv[2]);
-    printf("algo = %d, n = %d\n", algo, n);
-    for (int i = 3; i < argc; i++) {
+    n = atoi(argv[1]);
+    printf("n = %d\n", n);
+    for (int i = 2; i < argc; i++) {
         if (strcmp(argv[i], "-check") == 0) {
             checkFlag = true;
         }
@@ -19,13 +15,13 @@ int parseArguments(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 3) {
-        printf("Usage: test algo m n [options]\n");
+    if (argc < 2) {
+        printf("Usage: ./test_potrf n [options]\n");
         printf("Options:\n\t-check: enable checking the orthogonality and backward error\n");
-        return 0;
+        return EXIT_FAILURE;
     }
     if (parseArguments(argc, argv) != 0) {
-        return 0;
+        return EXIT_FAILURE;
     }
     float* hA = (float*)malloc(sizeof(*hA) * n * n);
     if (hA == nullptr) {
