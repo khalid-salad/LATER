@@ -9,4 +9,5 @@ target_link_libraries(qr PRIVATE  blas cublas cusolver)
 
 set_property(TARGET qr
         PROPERTY CUDA_SEPARABLE_COMPILATION ON)
-
+        
+set_property(TARGET qr PROPERTY CUDA_ARCHITECTURES native)

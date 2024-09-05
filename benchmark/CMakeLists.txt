@@ -9,3 +9,4 @@ include_directories(${MAGMA_INCLUDE_DIRS})
 
 target_link_libraries(bench_evd qr utility ${CUDART_LIBRARY} ${CUBLAS_LIBRARY} ${CUSOLVER_LIBRARY} ${CURAND_LIBRARY} ${MAGMA_LIBRARIES})
 
+set_property(TARGET bench_evd PROPERTY CUDA_ARCHITECTURES native)

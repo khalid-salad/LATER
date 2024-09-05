@@ -108,6 +108,10 @@ void generateUniformMatrix(float *dA,int m,int n)
     curandGenerateUniform(gen,dA,m*n);
 }
 
+void generatePositiveDefiniteMatrix(float *dA, int n)
+{
+    
+}
 
 float snorm(int m,int n,float* dA)
 {

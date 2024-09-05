@@ -1,6 +1,6 @@
 #include "LATER.h"
 #include "LATER_QR.h"
-#include "../include/cub-1.8.0/cub-1.8.0/cub/cub.cuh"
+#include <cub/cub.cuh>
 #include <assert.h>
 /*
 This panel serves later_rgsqrf

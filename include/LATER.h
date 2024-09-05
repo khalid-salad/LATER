@@ -144,6 +144,8 @@ void generateUniformMatrix(float *dA, int m, int n);
 
 void generateNormalMatrix(float *dA, int m, int n);
 
+void generatePositiveDefiniteMatrix(float *dA, int n);
+
 /*
 snorm returns the f-norm of a vector/matrix
 */

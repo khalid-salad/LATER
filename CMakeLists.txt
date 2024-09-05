@@ -89,6 +89,8 @@ include_directories(
         $ENV{CUTLASS_DIR}/tools/util/include
 )
 
+set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES native)
+
 #set_source_files_properties(test.cpp PROPERTIES LANGUAGE CUDA)
 #add_executable(test_cuda test.cu gpu_timer.cpp)
 #set_property(TARGET test_cuda

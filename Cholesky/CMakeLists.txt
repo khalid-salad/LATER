@@ -6,3 +6,5 @@ target_link_libraries(chol PRIVATE cublas cusolver)
 
 set_property(TARGET chol
         PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+        
+set_property(TARGET chol PROPERTY CUDA_ARCHITECTURES native)

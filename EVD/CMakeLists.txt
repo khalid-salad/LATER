@@ -9,4 +9,5 @@ target_link_libraries(evd PRIVATE blas cublas cusolver)
 
 set_property(TARGET evd
         PROPERTY CUDA_SEPARABLE_COMPILATION ON)
-
+        
+set_property(TARGET evd PROPERTY CUDA_ARCHITECTURES native)

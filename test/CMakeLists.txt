@@ -13,6 +13,7 @@ foreach(SRC ${TEST_SOURCES})
     message(${NAME})
     add_executable(${NAME} "${NAME}.cu")
     set_property(TARGET ${NAME}
-            PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+            PROPERTY CUDA_SEPARABLE_COMPILATION) 
+    set_property(TARGET ${NAME} PROPERTY CUDA_ARCHITECTURES native)
     target_link_libraries(${NAME} qr utility evd chol ${CUDART_LIBRARY} ${CUBLAS_LIBRARY} ${CUSOLVER_LIBRARY})
 endforeach()

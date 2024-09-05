@@ -7,3 +7,5 @@ target_link_libraries(utility PRIVATE cublas curand)
 
 set_property(TARGET utility
         PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+        
+set_property(TARGET utility PROPERTY CUDA_ARCHITECTURES native)

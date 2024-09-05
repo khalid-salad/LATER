@@ -23,18 +23,11 @@ int main(int argc, char* argv[]) {
     if (parseArguments(argc, argv) != 0) {
         return EXIT_FAILURE;
     }
-    float* hA = (float*)malloc(sizeof(*hA) * n * n);
-    if (hA == nullptr) {
-        return EXIT_FAILURE;
-    }
+    print_env();
     float* A;
     cudaMalloc(&A, sizeof(*A) * n * n);
+    generateUniformMatrix(A, n, n);
 
-    for (long i = 0; i < n * n; i++) {
-        hA[i] = 0.1;
-    }
-
-    cudaMemcpy(A, hA, sizeof(float) * n * n, cudaMemcpyHostToDevice);
     dim3 grid((n + 31) / 32, (n + 31) / 32);
     dim3 block(32, 32);
     clearTri<<<grid, block>>>('u', n, n, A, n);
@@ -54,8 +47,6 @@ int main(int argc, char* argv[]) {
 
     float normA = snorm(n, n, A);
 
-    cudaFree(twork);
-
     float* work;
     cudaMalloc(&work, sizeof(float) * 128 * 128);
 
@@ -65,9 +56,9 @@ int main(int argc, char* argv[]) {
     // printMatrixDeviceBlock("AA.csv", n, n, A, n);
 
     printf("n = %d\n", n);
-
+    startTimer();
     later_rpotrf('l', n, A, n, work, hwork);
-
+    auto ms = stopTimer();
     // printMatrixDeviceBlock("LL.csv", n, n, A, n);
 
     if (checkFlag) {
