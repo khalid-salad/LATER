@@ -21,35 +21,39 @@ struct cudaCtxt {
   cusolverDnHandle_t cusolver_handle;
 };
 
-/*
-These three functions are related with QR factorization
+/**
+ * QR FACTORIZATION
+ */
 
-rgsqrf: recursive Gram-Schmidt QR factorization
-
-rhouqr: recursive Householder QR factorization
-
-ormqr: form explicit Q from rhouqr result
-
-bhouqr: block Householder QR factorization
-
-ormqr2: form explicit Q from bhouqr result
-
-
-*/
+/**
+ * recursive Gram-Schmidt QR factorization
+ */
 void later_rgsqrf(cudaCtxt ctxt, int m, int n, float *A, int lda, float *R,
                   int ldr, float *work, int lwork, __half *hwork, int lhwork);
 
+/**
+ * recursive Householder QR factorization
+ */
 void later_rhouqr(cudaCtxt ctxt, int m, int n, float *A, int lda, float *W,
                   int ldw, float *R, int ldr, float *work, int lwork,
                   __half *hwork, int lhwork, float *U);
 
+/**
+ * form explicit Q from rhouqr result
+ */
 void later_ormqr(int m, int n, float *W, int ldw, float *Y, int ldy,
                  float *work);
 
+/**
+ * block Householder QR factorization
+ */
 void later_bhouqr(int m, int n, float *A, int lda, float *W, int ldw, float *R,
                   int ldr, float *work, int lwork, __half *hwork, int lhwork,
                   float *U);
 
+/**
+ * form explicit Q from bhouqr result
+ */
 void later_ormqr2(int m, int n, float *W, int ldw, float *Y, int ldy,
                   float *work);
 
@@ -60,20 +64,25 @@ void later_oc_qr_blk(cudaCtxt ctxt, int m, int n, float *A, int lda, float *R,
                      int ldr, std::shared_ptr<Mem_pool> _pool);
 
 /*
-These functions are BLAS-3 matrix operations
-
-rtrsm: recursive triangular solve
-rsyrk: recursive symmetric rank k C := alpha*A*A**T + beta*C or C :=
-alpha*A**T*A + beta*C rtrmm: recursive B := alpha*op(A)*B or B := alpha*B*op(A)
-where op(A) is one of A, A**T, or A**H
+BLAS-3 matrix operations
 */
 
+/**
+ * recursive triangular solve
+ */
 void later_rtrsm(cublasHandle_t handle, char uplo, char leri, char trans, int m,
                  int n, float *A, int lda, float *B, int ldb, __half *work);
 
+/**
+ * recursive symmetric rank k update
+ * C := alpha * A * A**T + beta * C or C := alpha * A**T * A + beta * C
+ */
 void later_rsyrk(cublasHandle_t handle, int n, int k, float alpha, float *A,
                  int lda, float beta, float *C, int ldc, __half *work);
 
+/**
+ * recursive triangular matrix multiply
+ */
 void later_rtrmm(int m, int n, float *A, int lda, float *B, int ldb, float *C,
                  int ldc, float *tempC, __half *hwork);
 

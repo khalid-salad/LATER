@@ -2,10 +2,10 @@
 #include "LATER_QR.h"
 #include <assert.h>
 #include <cub/cub.cuh>
-/*
-This panel serves later_rgsqrf
-*/
 
+/**
+ * This panel serves later_rgsqrf
+ */
 void mgs_caqr_panel_256x128(cudaCtxt ctxt, int m, int n, float *A, int lda,
                             float *R, int ldr, float *work) {
   if (m < 256 || n != 128) {
