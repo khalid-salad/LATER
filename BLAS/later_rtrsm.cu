@@ -8,186 +8,159 @@ float sone = 1.0;
 float snegone = -1.0;
 float szero = 0.0;
 
-//float panelTime = 0.0;
-//float gemmTime = 0.0;
+// float panelTime = 0.0;
+// float gemmTime = 0.0;
 
-__global__
-void kernel_l_l_n( int m, int n, __half *AA, int lda, __half *BB, int ldb)
-{
-    __half *A = AA;
-    __half *B = BB + blockIdx.x * 128;
+__global__ void kernel_l_l_n(int m, int n, __half *AA, int lda, __half *BB,
+                             int ldb) {
+  __half *A = AA;
+  __half *B = BB + blockIdx.x * 128;
 
-    int nn = n - 128 * blockIdx.x;
-    nn = (nn < 128) ? nn : 128;
+  int nn = n - 128 * blockIdx.x;
+  nn = (nn < 128) ? nn : 128;
 
-    __shared__ __half As[64 * 64];
-    __shared__ __half Bs[64 * 128];
+  __shared__ __half As[64 * 64];
+  __shared__ __half Bs[64 * 128];
 
-    int i = threadIdx.y;
+  int i = threadIdx.y;
 
-    #pragma unroll 8
-    for (int j = 0; j < 64; j++) 
-    {
-        if(i < 64) 
-        {
-            As[i * 64 + j] = A[i * lda + j];
-        }
-        if(i < nn)
-        {
-            Bs[i * 64 + j] = B[i * ldb + j];
-        }
+#pragma unroll 8
+  for (int j = 0; j < 64; j++) {
+    if (i < 64) {
+      As[i * 64 + j] = A[i * lda + j];
     }
-    __syncthreads();
-
-
-    int ldas = 64;
-    int ldbs = 64;
-
-    for(int k = 0; k < 64; k++)
-    {
-        Bs[k + i * ldbs] /= As[k + k * ldas];
-
-        #pragma unroll 8
-
-        for(int x = k + 1 + threadIdx.x; x < 64; x += blockDim.x)
-        {
-            if(x < 64)
-            {
-                Bs[x + i * ldbs] -= As[k + k * ldas] * Bs[k + i * ldbs];
-            }
-        }
+    if (i < nn) {
+      Bs[i * 64 + j] = B[i * ldb + j];
     }
-    __syncthreads();
+  }
+  __syncthreads();
 
-    #pragma unroll 8
-    for (int j = 0; j < 64; j++) 
-    {
-        if(i < nn)
-        {
-            B[i * ldb + j] = Bs[i * 64 + j];
-        }
+  int ldas = 64;
+  int ldbs = 64;
+
+  for (int k = 0; k < 64; k++) {
+    Bs[k + i * ldbs] /= As[k + k * ldas];
+
+#pragma unroll 8
+
+    for (int x = k + 1 + threadIdx.x; x < 64; x += blockDim.x) {
+      if (x < 64) {
+        Bs[x + i * ldbs] -= As[k + k * ldas] * Bs[k + i * ldbs];
+      }
     }
+  }
+  __syncthreads();
 
+#pragma unroll 8
+  for (int j = 0; j < 64; j++) {
+    if (i < nn) {
+      B[i * ldb + j] = Bs[i * 64 + j];
+    }
+  }
 }
 
-
-
-void trsm_l_l_n(cublasHandle_t handle, int m, int n, float* A, int lda, float* B, int ldb, __half* hwork)
-{
-    //printf("m,n=%d,%d\n", m, n);
-    if(m <= BLOCKSIZE)
-    {
-        //startTimer();
-        cublasStrsm(handle,
-            CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER,
-            CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT,
-            m, n, &sone,
-            A, lda,
-            B, ldb
-        );
-        //float ms = stopTimer();
-        //panelTime += ms;
-        //printf("panel TFLOPS is %lf\n", 1.0*m*m*n/1e9/ms);
-        //printf("%lf\n",panelTime);
-        return;
-    }
-    trsm_l_l_n(handle, m/2, n, A, lda, B, ldb, hwork);
-    
-    __half *Ah = hwork;
-    __half *Bh = hwork+m/2*m/2;
-
-    dim3 grid((m/2+31)/32, (m/2+31)/32);
-    dim3 block(32,32);
-    s2h<<<grid, block>>>(m/2, m/2, A+m/2, lda, Ah, m/2);
-
-    dim3 grid1((m/2+31)/32, (n+31)/32);
-    dim3 block1(32,32);
-    s2h<<<grid1, block1>>>(m/2, n, B, ldb, Bh, m/2);
-    //startTimer();
-
-    cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, m/2, n, m/2,
-        &snegone, Ah, CUDA_R_16F, m/2, Bh, CUDA_R_16F, m/2,
-        &sone, B+m/2, CUDA_R_32F, ldb, CUDA_R_32F,
-        CUBLAS_GEMM_DEFAULT_TENSOR_OP
-    );
-
-    //float ms = stopTimer();
-    //gemmTime += ms;
-    //printf("GEMM flops is %lf\n", 2.0*m/2.0*n*m/2.0/1e9/ms);
-    //printf("%lf\n",gemmTime);
-    //printMatrixDeviceBlock("ta.csv", m/2, m/2, A+m/2*m+m/2, lda);
-    //printMatrixDeviceBlock("tb.csv", m/2, n, B+m/2, ldb);
-    trsm_l_l_n(handle, m/2, n, A+m/2*lda+m/2, lda, B+m/2, ldb, hwork);
-    //printf("1111111\n");
-    //printMatrixDeviceBlock("tx.csv", m/2, n, B+m/2, ldb);
-    
-}
-
-void trsm_l_r_t(cublasHandle_t handle, int m, int n, float* A, int lda, float* B, int ldb, __half* hwork)
-{
-    
-    if(n <= BLOCKSIZE)
-    {
-        //startTimer();
-        cublasStrsm(handle,
-            CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER,
-            CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT,
-            m, n, &sone,
-            A, lda,
-            B, ldb
-        );
-        //float ms = stopTimer();
-        return;
-    }
-    //printf("1\n");
-    trsm_l_r_t(handle, m, n/2, A, lda, B, ldb, hwork);
-    //printf("1\n");
-    __half *Ah = hwork;
-    __half *Bh = hwork+n/2*n/2;
-
-    dim3 grid((n/2+31)/32, (n/2+31)/32);
-    dim3 block(32,32);
-    s2h<<<grid, block>>>(n/2, n/2, A+n/2, lda, Ah, n/2);
-
-    dim3 grid1((m+31)/32, (n/2+31)/32);
-    dim3 block1(32,32);
-    s2h<<<grid1, block1>>>(m, n/2, B, ldb, Bh, m);
-
-    cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_T, m, n/2, n/2,
-        &snegone, Bh, CUDA_R_16F, m, Ah, CUDA_R_16F, n/2,
-        &sone, B+n/2*ldb, CUDA_R_32F, ldb, CUDA_R_32F,
-        CUBLAS_GEMM_DEFAULT_TENSOR_OP
-    );
-
-    trsm_l_r_t(handle, m, n/2, A+n/2*lda+n/2, lda, B+n/2*ldb, ldb, hwork);
-}
-
-void later_rtrsm(cublasHandle_t handle, char uplo, char leri, char trans, int m, int n, float* A, int lda, float* B, int ldb, __half* hwork)
-{
-    //cublasHandle_t handle;
-    //cublasCreate(&handle);
-
-    //printMatrixDeviceBlock("A.csv", m, m, A, lda);
-    //printMatrixDeviceBlock("B.csv", m, n, B, ldb);
-    //startTimer();
-    if(uplo == 'l' && leri == 'l' && trans == 'n')
-        trsm_l_l_n(handle, m, n, A, lda, B, ldb, hwork);
-    else if (uplo == 'l' && leri == 'r' && trans == 't')
-        trsm_l_r_t(handle, m, n, A, lda, B, ldb, hwork);
-
-    //printf("rtrsm takes %f ms\n", stopTimer());
-    //printf("Panel takes %lfms\n", panelTime);
-    //printf("Gemm takes %lfms\n", gemmTime);
-    //printf("22222\n");
-    //printMatrixDeviceBlock("X.csv", m, n, B, ldb);
-
-    //cublasDestroy(handle);
-
+void trsm_l_l_n(cublasHandle_t handle, int m, int n, float *A, int lda,
+                float *B, int ldb, __half *hwork) {
+  // printf("m,n=%d,%d\n", m, n);
+  if (m <= BLOCKSIZE) {
+    // startTimer();
+    cublasStrsm(handle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N,
+                CUBLAS_DIAG_NON_UNIT, m, n, &sone, A, lda, B, ldb);
+    // float ms = stopTimer();
+    // panelTime += ms;
+    // printf("panel TFLOPS is %lf\n", 1.0*m*m*n/1e9/ms);
+    // printf("%lf\n",panelTime);
     return;
+  }
+  trsm_l_l_n(handle, m / 2, n, A, lda, B, ldb, hwork);
+
+  __half *Ah = hwork;
+  __half *Bh = hwork + m / 2 * m / 2;
+
+  dim3 grid((m / 2 + 31) / 32, (m / 2 + 31) / 32);
+  dim3 block(32, 32);
+  s2h<<<grid, block>>>(m / 2, m / 2, A + m / 2, lda, Ah, m / 2);
+
+  dim3 grid1((m / 2 + 31) / 32, (n + 31) / 32);
+  dim3 block1(32, 32);
+  s2h<<<grid1, block1>>>(m / 2, n, B, ldb, Bh, m / 2);
+  // startTimer();
+
+  cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, m / 2, n, m / 2, &snegone, Ah,
+               CUDA_R_16F, m / 2, Bh, CUDA_R_16F, m / 2, &sone, B + m / 2,
+               CUDA_R_32F, ldb, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+
+  // float ms = stopTimer();
+  // gemmTime += ms;
+  // printf("GEMM flops is %lf\n", 2.0*m/2.0*n*m/2.0/1e9/ms);
+  // printf("%lf\n",gemmTime);
+  // printMatrixDeviceBlock("ta.csv", m/2, m/2, A+m/2*m+m/2, lda);
+  // printMatrixDeviceBlock("tb.csv", m/2, n, B+m/2, ldb);
+  trsm_l_l_n(handle, m / 2, n, A + m / 2 * lda + m / 2, lda, B + m / 2, ldb,
+             hwork);
+  // printf("1111111\n");
+  // printMatrixDeviceBlock("tx.csv", m/2, n, B+m/2, ldb);
+}
+
+void trsm_l_r_t(cublasHandle_t handle, int m, int n, float *A, int lda,
+                float *B, int ldb, __half *hwork) {
+
+  if (n <= BLOCKSIZE) {
+    // startTimer();
+    cublasStrsm(handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T,
+                CUBLAS_DIAG_NON_UNIT, m, n, &sone, A, lda, B, ldb);
+    // float ms = stopTimer();
+    return;
+  }
+  // printf("1\n");
+  trsm_l_r_t(handle, m, n / 2, A, lda, B, ldb, hwork);
+  // printf("1\n");
+  __half *Ah = hwork;
+  __half *Bh = hwork + n / 2 * n / 2;
+
+  dim3 grid((n / 2 + 31) / 32, (n / 2 + 31) / 32);
+  dim3 block(32, 32);
+  s2h<<<grid, block>>>(n / 2, n / 2, A + n / 2, lda, Ah, n / 2);
+
+  dim3 grid1((m + 31) / 32, (n / 2 + 31) / 32);
+  dim3 block1(32, 32);
+  s2h<<<grid1, block1>>>(m, n / 2, B, ldb, Bh, m);
+
+  cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_T, m, n / 2, n / 2, &snegone, Bh,
+               CUDA_R_16F, m, Ah, CUDA_R_16F, n / 2, &sone, B + n / 2 * ldb,
+               CUDA_R_32F, ldb, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+
+  trsm_l_r_t(handle, m, n / 2, A + n / 2 * lda + n / 2, lda, B + n / 2 * ldb,
+             ldb, hwork);
+}
+
+void later_rtrsm(cublasHandle_t handle, char uplo, char leri, char trans, int m,
+                 int n, float *A, int lda, float *B, int ldb, __half *hwork) {
+  // cublasHandle_t handle;
+  // cublasCreate(&handle);
+
+  // printMatrixDeviceBlock("A.csv", m, m, A, lda);
+  // printMatrixDeviceBlock("B.csv", m, n, B, ldb);
+  // startTimer();
+  if (uplo == 'l' && leri == 'l' && trans == 'n')
+    trsm_l_l_n(handle, m, n, A, lda, B, ldb, hwork);
+  else if (uplo == 'l' && leri == 'r' && trans == 't')
+    trsm_l_r_t(handle, m, n, A, lda, B, ldb, hwork);
+
+  // printf("rtrsm takes %f ms\n", stopTimer());
+  // printf("Panel takes %lfms\n", panelTime);
+  // printf("Gemm takes %lfms\n", gemmTime);
+  // printf("22222\n");
+  // printMatrixDeviceBlock("X.csv", m, n, B, ldb);
+
+  // cublasDestroy(handle);
+
+  return;
 }
 
 /*
-void later_rtrsm(int m, int n, float* A, int lda, float* B, int ldb, __half* hwork)
+void later_rtrsm(int m, int n, float* A, int lda, float* B, int ldb, __half*
+hwork)
 {
     cublasHandle_t handle;
     cublasCreate(&handle);

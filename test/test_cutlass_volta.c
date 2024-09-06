@@ -1,150 +1,129 @@
 //
 // Created by pwu on 9/30/20.
 //
-//#define KERNEL_LAUNCH_INFO
+// #define KERNEL_LAUNCH_INFO
 
-#include <iostream>
-#include <cublas_v2.h>
-#include <cusolverDn.h>
-#include <cuda.h>
-#include <cuda_runtime.h>
 #include "/home/szhang/cutlass/include/cutlass/cutlass.h"
 #include "/home/szhang/cutlass/include/cutlass/numeric_types.h"
-#include <cutlass/gemm/device/gemm.h>
-#include <cutlass/util/host_tensor.h>
-#include <cutlass/util/reference/device/tensor_fill.h>
+#include "LATER.h"
 #include "cutlass/util/reference/host/tensor_compare.h"
 #include "cutlass/util/reference/host/tensor_copy.h"
 #include "cutlass/util/reference/host/tensor_fill.h"
-#include "LATER.h"
+#include <cublas_v2.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cusolverDn.h>
+#include <cutlass/gemm/device/gemm.h>
+#include <cutlass/util/host_tensor.h>
+#include <cutlass/util/reference/device/tensor_fill.h>
+#include <iostream>
 
-#define CUTLASS_CHECK(status)                                                                    \
-  {                                                                                              \
-    cutlass::Status error = status;                                                              \
-    if (error != cutlass::Status::kSuccess) {                                                    \
-      std::cerr << "Got cutlass error: " << cutlassGetStatusString(error) << " at: " << __LINE__ \
-                << std::endl;                                                                    \
-      exit(EXIT_FAILURE);                                                                        \
-    }                                                                                            \
+#define CUTLASS_CHECK(status)                                                  \
+  {                                                                            \
+    cutlass::Status error = status;                                            \
+    if (error != cutlass::Status::kSuccess) {                                  \
+      std::cerr << "Got cutlass error: " << cutlassGetStatusString(error)      \
+                << " at: " << __LINE__ << std::endl;                           \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
   }
 
-int main()
-{
-    cutlass::Status status;
-    int M = 4096;
-    int N = 4096;
-    int K = 4096;
+int main() {
+  cutlass::Status status;
+  int M = 4096;
+  int N = 4096;
+  int K = 4096;
 
-//    float alpha = 1.23f;
-//    float beta = -.123f;
-    print_env();
-    // get CC major.minor
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, 0);
+  //    float alpha = 1.23f;
+  //    float beta = -.123f;
+  print_env();
+  // get CC major.minor
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, 0);
 
-    cublasHandle_t handle;
-    cublasCreate(&handle);
-    cusolverDnHandle_t cusolver_handle;
-    cusolverDnCreate(&cusolver_handle);
-    {
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+  cusolverDnHandle_t cusolver_handle;
+  cusolverDnCreate(&cusolver_handle);
+  {
 
-        std::cout << "*** A16B16C16C16 ***" <<
-                  " " << M << "x" << N << "x" << K << std::endl;
-        using ElementInputA = cutlass::half_t;
-        using ElementInputB = cutlass::half_t;
-        using ElementOutput = cutlass::half_t;
-        cutlass::HostTensor<ElementInputA , cutlass::layout::ColumnMajor> A({M, K});
-        cutlass::HostTensor<ElementInputB , cutlass::layout::ColumnMajor> B({K, N});
-        cutlass::HostTensor<ElementOutput , cutlass::layout::ColumnMajor> C({M, N});
-        cutlass::reference::host::TensorFillRandomUniform(
-                A.host_view(),
-                1,
-                ElementInputA(4),
-                ElementInputA(-4),
-                0);  // <- Fill matrix A on host with uniform-distribution random data
-        cutlass::reference::host::TensorFillRandomUniform(
-                B.host_view(),
-                1,
-                ElementInputB(4),
-                ElementInputB(-4),
-                0);  // <- Fill matrix B on host with uniform-distribution random data
-        cutlass::reference::host::TensorFillRandomUniform(
-                C.host_view(),
-                1,
-                ElementOutput(4),
-                ElementOutput(-4),
-                0);  // <- Fill matrix C on host with uniform-distribution random data
+    std::cout << "*** A16B16C16C16 ***" << " " << M << "x" << N << "x" << K
+              << std::endl;
+    using ElementInputA = cutlass::half_t;
+    using ElementInputB = cutlass::half_t;
+    using ElementOutput = cutlass::half_t;
+    cutlass::HostTensor<ElementInputA, cutlass::layout::ColumnMajor> A({M, K});
+    cutlass::HostTensor<ElementInputB, cutlass::layout::ColumnMajor> B({K, N});
+    cutlass::HostTensor<ElementOutput, cutlass::layout::ColumnMajor> C({M, N});
+    cutlass::reference::host::TensorFillRandomUniform(
+        A.host_view(), 1, ElementInputA(4), ElementInputA(-4),
+        0); // <- Fill matrix A on host with uniform-distribution random data
+    cutlass::reference::host::TensorFillRandomUniform(
+        B.host_view(), 1, ElementInputB(4), ElementInputB(-4),
+        0); // <- Fill matrix B on host with uniform-distribution random data
+    cutlass::reference::host::TensorFillRandomUniform(
+        C.host_view(), 1, ElementOutput(4), ElementOutput(-4),
+        0); // <- Fill matrix C on host with uniform-distribution random data
 
+    A.sync_device();
+    B.sync_device();
+    C.sync_device();
+    using ElementAccumulator = cutlass::half_t;
+    using ElementComputeEpilogue = ElementAccumulator;
+    using EpilogueOutputOp = cutlass::epilogue::thread::LinearCombination<
+        ElementOutput, 128 / cutlass::sizeof_bits<ElementOutput>::value,
+        ElementAccumulator, ElementComputeEpilogue>;
 
-        A.sync_device();
-        B.sync_device();
-        C.sync_device();
-        using ElementAccumulator = cutlass::half_t;
-        using ElementComputeEpilogue = ElementAccumulator;
-        using EpilogueOutputOp = cutlass::epilogue::thread::LinearCombination<
-                ElementOutput,
-                128 / cutlass::sizeof_bits<ElementOutput>::value,
-                ElementAccumulator,
-                ElementComputeEpilogue
-        >;
+    using SmArch = cutlass::arch::Sm70;
+    using Gemm = cutlass::gemm::device::Gemm<
+        ElementInputA, cutlass::layout::ColumnMajor, ElementInputB,
+        cutlass::layout::ColumnMajor, ElementOutput,
+        cutlass::layout::ColumnMajor, ElementAccumulator,
+        cutlass::arch::OpClassTensorOp, SmArch,
+        cutlass::gemm::GemmShape<128, 256, 32>,
+        cutlass::gemm::GemmShape<64, 64, 32>, cutlass::gemm::GemmShape<8, 8, 4>,
+        EpilogueOutputOp,
+        cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle, 2>;
+    ElementAccumulator alpha = ElementAccumulator(1),
+                       beta = ElementAccumulator(-1);
+    //        EpilogueOutputOp::Params params(alpha, beta);
+    cutlass::gemm::GemmCoord problem_size({M, N, K});
+    typename Gemm::Arguments arguments{problem_size,
+                                       A.device_ref(),
+                                       B.device_ref(),
+                                       C.device_ref(),
+                                       C.device_ref(),
+                                       {alpha, beta},
+                                       1};
+    size_t workspace_size = Gemm::get_workspace_size(arguments);
+    cutlass::device_memory::allocation<uint8_t> workspace(workspace_size);
+    // auto timer = cutlass::profiler::GpuTimer();
 
-        using SmArch = cutlass::arch::Sm70;
-        using Gemm = cutlass::gemm::device::Gemm<
-                ElementInputA,
-                cutlass::layout::ColumnMajor,
-                ElementInputB,
-                cutlass::layout::ColumnMajor,
-                ElementOutput,
-                cutlass::layout::ColumnMajor,
-                ElementAccumulator,
-                cutlass::arch::OpClassTensorOp,
-                SmArch,
-                cutlass::gemm::GemmShape<128,256,32>,
-                cutlass::gemm::GemmShape<64,64,32>,
-                cutlass::gemm::GemmShape<8,8,4>,
-                EpilogueOutputOp,
-                cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle,
-                2
-        >;
-        ElementAccumulator alpha = ElementAccumulator(1), beta = ElementAccumulator(-1);
-//        EpilogueOutputOp::Params params(alpha, beta);
-        cutlass::gemm::GemmCoord problem_size({M, N, K});
-        typename Gemm::Arguments arguments{problem_size,
-                                           A.device_ref(),
-                                           B.device_ref(),
-                                           C.device_ref(),
-                                           C.device_ref(),
-                                           {alpha, beta},
-                                           1};
-        size_t workspace_size = Gemm::get_workspace_size(arguments);
-        cutlass::device_memory::allocation<uint8_t> workspace(workspace_size);
-        //auto timer = cutlass::profiler::GpuTimer();
+    Gemm gemm_op;
+    status = gemm_op.initialize(arguments, workspace.get());
+    CUTLASS_CHECK(status);
+    startTimer();
+    gemm_op();
+    auto ms = stopTimer();
+    std::cout << "\tCUTLASS MMA takes " << ms << " (ms)";
+    std::cout << "\t\t GFLOPS: " << 2.0 * M * N * K / (1.e6 * ms) << std::endl;
 
+    startTimer();
+    auto status = cublasGemmEx(
+        handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alpha,
+        A.device_ref().data(), CUDA_R_16F, A.device_ref().stride(0),
+        B.device_ref().data(), CUDA_R_16F, B.device_ref().stride(0), &beta,
+        C.device_ref().data(), CUDA_R_16F, C.device_ref().stride(0), CUDA_R_32F,
+        CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+    ms = stopTimer();
 
-        Gemm gemm_op;
-        status = gemm_op.initialize(arguments, workspace.get());
-        CUTLASS_CHECK(status);
-        startTimer();
-        gemm_op();
-        auto ms = stopTimer();
-        std::cout << "\tCUTLASS MMA takes " << ms << " (ms)";
-        std::cout << "\t\t GFLOPS: " << 2.0 * M * N * K / (1.e6 * ms) << std::endl;
-
-        startTimer();
-        auto status = cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K,
-                                   &alpha, A.device_ref().data(), CUDA_R_16F, A.device_ref().stride(0),
-                                   B.device_ref().data(), CUDA_R_16F, B.device_ref().stride(0),
-                                   &beta, C.device_ref().data(), CUDA_R_16F, C.device_ref().stride(0),
-                                   CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
-        ms = stopTimer();
-
-        std::cout << "\tCUBLAS takes " << ms << " (ms)";
-        std::cout << "\t\t GFLOPS: " << 2.0 * M * N * K / (1.e6 * ms) << std::endl;
-        if (status != CUBLAS_STATUS_SUCCESS) {
-            std::cout << " !Unsuccessful! CUBLAS Status: " << std::endl;
-            return -1;
-        }
+    std::cout << "\tCUBLAS takes " << ms << " (ms)";
+    std::cout << "\t\t GFLOPS: " << 2.0 * M * N * K / (1.e6 * ms) << std::endl;
+    if (status != CUBLAS_STATUS_SUCCESS) {
+      std::cout << " !Unsuccessful! CUBLAS Status: " << std::endl;
+      return -1;
     }
+  }
 #if 0
     {
         std::cout << "*** A16B16C16C32 ***" <<
@@ -375,7 +354,5 @@ int main()
         std::cout << "IPIV 1 2 3=" <<  ipiv.at({0,0}) << " " << ipiv.at({1,0}) << std::endl;
     }
 #endif
-    return 0;
-
-
+  return 0;
 }
