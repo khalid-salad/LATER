@@ -17,25 +17,31 @@ void checkOtho(int, int, float *, int);
 
 bool checkFlag = false;
 
-int parseArguments(int argc, char *argv[]) {
+int parseArguments(int argc, char *argv[])
+{
     algo = atoi(argv[1]);
     m = atoi(argv[2]);
     n = atoi(argv[3]);
-    for (int i = 4; i < argc; i++) {
-        if (strcmp(argv[i], "-check") == 0) {
+    for (int i = 4; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-check") == 0)
+        {
             checkFlag = true;
         }
     }
     return 0;
 }
 
-int main(int argc, char *argv[]) {
-    if (argc < 4) {
+int main(int argc, char *argv[])
+{
+    if (argc < 4)
+    {
         printf("Usage: test algo m n [options]\n");
         printf("Options:\n\t-check: enable checking the orthogonality and backward error\n");
         return 0;
     }
-    if (parseArguments(argc, argv) != 0) {
+    if (parseArguments(argc, argv) != 0)
+    {
         return 0;
     }
     print_env();
@@ -56,7 +62,8 @@ int main(int argc, char *argv[]) {
 
     int lwork;
 
-    if (algo == 1) {
+    if (algo == 1)
+    {
 
         // int lwork = (n/2)*(n/2);
         int lwork = m / 256 * 32 * n;
@@ -73,7 +80,8 @@ int main(int argc, char *argv[]) {
         float ms = stopTimer();
         printf("RGSQRF takes %.0f ms, exec rate %.0f GFLOPS\n", ms, 2.0 * n * n * (m - 1.0 / 3.0 * n) / (ms * 1e6));
 
-        if (checkFlag) {
+        if (checkFlag)
+        {
 
             checkOtho(m, n, A, m);
 
@@ -87,7 +95,8 @@ int main(int argc, char *argv[]) {
         cudaFree(hwork);
     }
 
-    if (algo == 2) {
+    if (algo == 2)
+    {
         printf("Perform RHOUQR\nmatrix size %d*%d\n", m, n);
         __half *hwork;
         int lhwork = m * n;
@@ -106,7 +115,8 @@ int main(int argc, char *argv[]) {
         float ms = stopTimer();
         printf("RHOUQR takes %.0f ms, exec rate %.0f GFLOPS\n", ms, 2.0 * n * n * (m - 1.0 / 3.0 * n) / (ms * 1e6));
 
-        if (checkFlag) {
+        if (checkFlag)
+        {
             cudaMalloc(&dA, sizeof(float) * m * n);
             generateUniformMatrix(dA, m, n);
             later_ormqr(m, n, W, m, A, m, work);
@@ -127,7 +137,8 @@ int main(int argc, char *argv[]) {
         cudaFree(hwork);
     }
 
-    if (algo == 3) {
+    if (algo == 3)
+    {
         printf("Perform BHOUQR\nmatrix size %d*%d\n", m, n);
         __half *hwork;
         int lhwork = m * n;
@@ -147,7 +158,8 @@ int main(int argc, char *argv[]) {
         // printf("BHOUQR takes %.0f ms, exec rate %.0f GFLOPS\n", ms,
         // 2.0*n*n*( m -1.0/3.0*n )/(ms*1e6));
 
-        if (checkFlag) {
+        if (checkFlag)
+        {
             cudaMalloc(&dA, sizeof(float) * m * n);
             generateUniformMatrix(dA, m, n);
             later_ormqr2(m, n, W, m, A, m, work);
@@ -192,7 +204,8 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void checkResult(int m, int n, float *A, int lda, float *Q, int ldq, float *R, int ldr) {
+void checkResult(int m, int n, float *A, int lda, float *Q, int ldq, float *R, int ldr)
+{
     float normA = snorm(m, n, A);
     float alpha = 1.0;
     float beta = -1.0;
@@ -204,7 +217,8 @@ void checkResult(int m, int n, float *A, int lda, float *Q, int ldq, float *R, i
     printf("Backward error: ||A-QR||/(||A||) = %.6e\n", normRes / normA);
 }
 
-void sgemm(int m, int n, int k, float *dA, int lda, float *dB, int ldb, float *dC, int ldc, float alpha, float beta) {
+void sgemm(int m, int n, int k, float *dA, int lda, float *dB, int ldb, float *dC, int ldc, float alpha, float beta)
+{
     cublasHandle_t handle;
     cublasCreate(&handle);
     float sone = alpha;
@@ -213,7 +227,8 @@ void sgemm(int m, int n, int k, float *dA, int lda, float *dB, int ldb, float *d
     cublasDestroy(handle);
 }
 
-void checkOtho(int m, int n, float *Q, int ldq) {
+void checkOtho(int m, int n, float *Q, int ldq)
+{
     float *I;
     cudaMalloc(&I, sizeof(float) * n * n);
 
@@ -235,7 +250,8 @@ void checkOtho(int m, int n, float *Q, int ldq) {
     cublasDestroy(handle);
 }
 
-void checkResult(int m, int n, float *A, int lda, float *W, int ldw, float *Y, int ldy, float *R, int ldr) {
+void checkResult(int m, int n, float *A, int lda, float *W, int ldw, float *Y, int ldy, float *R, int ldr)
+{
     float *I;
     cudaMalloc(&I, sizeof(float) * n * n);
 
