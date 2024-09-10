@@ -5,8 +5,7 @@ see http://www2.cs.uh.edu/~panruowu/later.html
 ## Prerequisites
 
 * CMake 3.12+
-* CUDA 10.1+
-* CUTLASS 2.1+
+* CUDA 11.1+
 
 ## Build
 ### Linux
@@ -21,9 +20,7 @@ $ mkdir -p build && cd build
 ```
 #### Set Environment Variables
 ```console
-$ export CUDACXX=/usr/local/cuda-10.1/bin/nvcc
-$ export CUDA_PATH=/usr/local/cuda-10.1
-$ export CUTLASS_DIR=$HOME/cutlass
+$ export CUDA_PATH=/usr/local/cuda
 ```
 Change the CUDACXX and CUDA_PATH environment variables to match
 your system's CUDA installation directory. Set the CUTLASS_DIR environment

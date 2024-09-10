@@ -202,7 +202,7 @@ void printMatrixDeviceBlock(char *path,int m,int n, T* A, int lda)
     delete[] Ah;
 }*/
 template <typename T>
-void printMatrixDeviceBlock(char *filename, int m, int n, T *dA, int lda) {
+void printMatrixDeviceBlock(const char * const filename, int m, int n, T *dA, int lda) {
   FILE *f = fopen(filename, "w");
   if (f == NULL) {
     printf("fault!\n");

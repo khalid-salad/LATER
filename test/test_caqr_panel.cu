@@ -40,9 +40,6 @@ int main(int argc, char *argv[]) {
   cudaMalloc(&A, sizeof(float) * m * n);
   generateUniformMatrix(A, m, n);
   int nb = (m + 255) / 256;
-  int r = m % 256;
-  int ldwork = m / 256 * 32 + 32;
-  int mm = m / 256 * 32 + 32;
   int lda = m;
 
   print_env();

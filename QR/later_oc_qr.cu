@@ -102,9 +102,6 @@ void later_oc_qr_rec(cudaCtxt ctxt, int m, int n, float *A, int lda, float *R,
 
 void later_oc_qr_blk(cudaCtxt ctxt, int m, int n, float *A, int lda, float *R,
                      int ldr, std::shared_ptr<Mem_pool> pool) {
-  float sone = 1.0;
-  float szero = 0.0;
-  float snegone = -1.0;
   for (int i = 0; i < n; i += BLOCKSIZE) {
     float *dA = reinterpret_cast<float *>(
         pool->allocate(sizeof(float) * m * BLOCKSIZE));
@@ -120,15 +117,5 @@ void later_oc_qr_blk(cudaCtxt ctxt, int m, int n, float *A, int lda, float *R,
     pool->free(dB);
     pool->free(dR);
     pool->free(hwork);
-
-    if (i < n - BLOCKSIZE) {
-      // later_oc_sgemm(CUBLAS_OP_T, CUBLAS_OP_N, BLOCKSIZE, n-i-BLOCKSIZE, m,
-      // sone, A+i*lda, lda, A+(i+BLOCKSIZE)*lda, lda, szero, R+i+BLOCKSIZE*ldr,
-      // ldr);
-
-      // later_oc_sgemm(CUBLAS_OP_N, CUBLAS_OP_N, m, n-i-BLOCKSIZE, BLOCKSIZE ,
-      // snegone, A+i*lda, lda, R+i+BLOCKSIZE*ldr, ldr, sone,
-      // A+(i+BLOCKSIZE)*lda, lda);
-    }
   }
 }

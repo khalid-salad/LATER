@@ -58,8 +58,6 @@ int main(int argc, char *argv[]) {
   cublasCreate(&ctxt.cublas_handle);
   cusolverDnCreate(&ctxt.cusolver_handle);
 
-  int lwork;
-
   if (algo == 1) {
 
     // int lwork = (n/2)*(n/2);

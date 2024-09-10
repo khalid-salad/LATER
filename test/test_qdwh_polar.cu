@@ -56,9 +56,7 @@ int main(int argc, char *argv[]) {
   cudaCtxt ctxt{};
   cublasCreate(&ctxt.cublas_handle);
   cusolverDnCreate(&ctxt.cusolver_handle);
-  int lda = 2 * n;
-  int ldh = n;
-
+  
   float *work;
   cudaMalloc(&work, sizeof(float) * n * n);
 

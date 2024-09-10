@@ -50,16 +50,6 @@ int main(int argc, char *argv[]) {
 
   auto pool = std::make_shared<Mem_pool>(mem);
 
-  float *work;
-  __half *hwork;
-  float *dA, *dR;
-  /*
-  cudaMalloc(&dA, sizeof(float)*m*BLOCKSIZE);
-  cudaMalloc(&dR, sizeof(float)*BLOCKSIZE*BLOCKSIZE);
-  cudaMalloc(&work, sizeof(float)*m/256*32*BLOCKSIZE);
-  cudaMalloc(&hwork, sizeof(__half)*m*BLOCKSIZE);
-  */
-
   cudaCtxt ctxt;
   cublasCreate(&ctxt.cublas_handle);
   cusolverDnCreate(&ctxt.cusolver_handle);

@@ -10,7 +10,7 @@ void mgs_caqr_panel_256x128(cudaCtxt ctxt, int m, int n, float *A, int lda,
                             float *R, int ldr, float *work) {
   if (m < 256 || n != 128) {
     printf(
-        "CAQR_256x128: ERROR: m must be > 256, n must be 128. (m,n)=(%d,%d)\n",
+        "CAQR_256x128: ERROR: m must be > 256, n must be 128. (m, n)=(%d,%d)\n",
         m, n);
   }
   float sone = 1.0;
@@ -482,7 +482,6 @@ __global__ void hou_kernel3(int m, int n, float *AA, int lda, float *RR,
     Q[8] = 1.0;
 
   for (int k = mnmin - 1; k >= 0; k--) {
-    float acc[8];
     if (threadIdx.y >= k) {
       float accum = 0;
       for (int l = 0; l < 8; l++)
