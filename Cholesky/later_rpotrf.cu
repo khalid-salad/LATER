@@ -10,10 +10,6 @@ int lwork;
 
 int* dev_info;
 
-/*
-This function performs recursive Cholesky factorization
-*/
-
 void u_potrf(cudaCtxt ctxt, int n, float* A, int lda, float* work, __half* hwork) {
     if (n <= BLOCKSIZE) {
         cusolverDnSpotrf(ctxt.cusolver_handle, CUBLAS_FILL_MODE_LOWER, n, A, lda, work, LWORK, dev_info);
@@ -24,7 +20,7 @@ void u_potrf(cudaCtxt ctxt, int n, float* A, int lda, float* work, __half* hwork
         u_potrf(ctxt, n1, A, lda, work, hwork);
         auto A12 = A + n * n1;
         auto A22 = A + n1 + n * n1;
-        later_rtrsm(ctxt.cublas_handle, 'l', 'l', 't', n1, n2, A, lda, A12, lda, hwork);
+        later_rtrsm(ctxt.cublas_handle, 'u', 'l', 't', n1, n2, A, lda, A12, lda, hwork);
         later_rsyrk(ctxt.cublas_handle, n2, n1, -1.0, A12, lda, 1.0, A22, lda, hwork);
         u_potrf(ctxt, n2, A22, lda, work, hwork);
     }
@@ -32,7 +28,6 @@ void u_potrf(cudaCtxt ctxt, int n, float* A, int lda, float* work, __half* hwork
 
 void l_potrf(cudaCtxt ctxt, int n, float* A, int lda, float* work, __half* hwork) {
     if (n <= BLOCKSIZE) {
-        startTimer();
         cusolverDnSpotrf(ctxt.cusolver_handle, CUBLAS_FILL_MODE_LOWER, n, A, lda, work, LWORK, dev_info);
         return;
     } else {
@@ -51,7 +46,6 @@ void later_rpotrf(char uplo, int n, float* A, int lda, float* work, __half* hwor
     cudaCtxt ctxt;
     cublasCreate(&ctxt.cublas_handle);
     cusolverDnCreate(&ctxt.cusolver_handle);
-    // printMatrixDeviceBlock("A.csv", n,n, A,n);
     cudaMalloc(&dev_info, sizeof(*dev_info));
 
     if (uplo == 'l') {
