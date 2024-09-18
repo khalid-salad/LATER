@@ -46,14 +46,14 @@ $ cmake --build .
 ```console
 $ cd build/test
 $ ./test_qr 1 16384 16384 -check
-$ ./test_potrf 1 16384 -check
+$ ./test_potrf 16384 -check
 ```
 
 ### Windows
 ```console
 $ cd test/debug
 $ test_qr.exe 1 16384 16384 -check
-$ test_qr.exe 1 16384 -check
+$ test_potrf.exe 16384 -check
 ```
 
 ## Tested GPUs and Platforms

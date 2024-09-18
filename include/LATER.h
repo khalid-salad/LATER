@@ -72,7 +72,7 @@ void later_rtrsm(cublasHandle_t handle, char uplo, char leri, char trans, int m,
 
 /**
  * recursive symmetric rank k update
- * C := alpha * A * A**T + beta * C or C := alpha * A**T * A + beta * C
+ * C := alpha * A * A**T + beta * C
  */
 void later_rsyrk(cublasHandle_t handle, int n, int k, float alpha, float* A, int lda, float beta, float* C, int ldc,
                  __half* work);
@@ -174,18 +174,20 @@ __global__ void transpose(int m, int n, float* dA, int lda, float* tmpA);
 __global__ void copy_lower_to_upper(int ldax, int lday, float* a);
 
 /**
- * Generate a matrix whose values are from uniform(0, 1) on GPU
+ * Fill device matrix dA with values from uniform(0, 1)
  */
 void generateUniformMatrix(float* dA, int m, int n);
 
 /**
- * Generate a matrix whose values are from normal(0, 1) on GPU
+ * Fill device matrix dA with values from normal(0, 1)
  */
 void generateNormalMatrix(float* dA, int m, int n);
 
 /**
- * return host matrix hA with random values
- * such that hA is a positive definite matrix
+ * return device matrix dA with random values
+ * such that dA is a positive definite matrix
+ *
+ * device matrix dA must be freed by caller
  */
 float* uniformPositiveDefiniteMatrix(size_t n);
 

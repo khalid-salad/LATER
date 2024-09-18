@@ -95,41 +95,28 @@ void generateUniformMatrix(float* dA, int m, int n) {
 float* uniformPositiveDefiniteMatrix(size_t n) {
     auto num_bytes = sizeof(float) * n * n;
 
-    // generate random [0, 1] matrix on host
-    float* h_rand = (float*)malloc(num_bytes);
-    while (h_rand == nullptr) {
-        h_rand = (float*)malloc(num_bytes);
-    }
-    generateUniformMatrix(h_rand, n, n);
-
-    float* d_tmp;
-    cudaMalloc(&d_tmp, num_bytes);
-    cudaMemset(d_tmp, 0, num_bytes);
-
-    // copy random [0, 1] host matrix to device
+    // generate random [0, 1] matrix on device
     float* d_rand;
     cudaMalloc(&d_rand, num_bytes);
-    cudaMemcpy(d_rand, h_rand, num_bytes, cudaMemcpyHostToDevice);
-    free(h_rand);
+    generateUniformMatrix(d_rand, n, n);
 
-    // set d_tmp = d_rand * d_rand**T
+    float* d_ret;
+    cudaMalloc(&d_ret, num_bytes);
+    cudaMemset(d_ret, 0, num_bytes);
+
+    // set d_ret = d_rand * d_rand**T
     cublasHandle_t handle;
     cublasCreate(&handle);
     __half* dwork;
     cudaMalloc(&dwork, num_bytes);
-    later_rsyrk(handle, n, n, 1.0, d_rand, n, 0, d_tmp, n, dwork);
-
-    // copy d_tmp to host
-    float* h_ret = (float*)malloc(num_bytes);
-    while (h_ret == nullptr) {
-        h_ret = (float*)malloc(num_bytes);
-    }
-    cudaMemcpy(h_ret, d_tmp, num_bytes, cudaMemcpyDeviceToHost);
-
-    // clean up
-    cudaFree(d_tmp);
+    std::cout << "set d_ret = d_drand * d_rand**T" << std::endl;
+    later_rsyrk(handle, n, n, 1.0, d_rand, n, 0, d_ret, n, dwork);
+    std::cout << "done" << std::endl;
+    // clean up and return d_ret
+    cublasDestroy(handle);
     cudaFree(d_rand);
-    return h_ret;
+    cudaFree(dwork);
+    return d_ret;
 }
 
 float snorm(int m, int n, float* dA) {
