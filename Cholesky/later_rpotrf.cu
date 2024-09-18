@@ -12,7 +12,7 @@ int* dev_info;
 
 void u_potrf(cudaCtxt ctxt, int n, float* A, int lda, float* work, __half* hwork) {
     if (n <= BLOCKSIZE) {
-        cusolverDnSpotrf(ctxt.cusolver_handle, CUBLAS_FILL_MODE_LOWER, n, A, lda, work, LWORK, dev_info);
+        cusolverDnSpotrf(ctxt.cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, lda, work, LWORK, dev_info);
         return;
     } else {
         auto n1 = n / 2;

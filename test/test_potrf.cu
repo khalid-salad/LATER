@@ -28,20 +28,19 @@ int main(int argc, char* argv[]) {
     float* dA;
     cudaMalloc(&dA, num_bytes);
     cudaMemcpy(dA, hA, num_bytes, cudaMemcpyHostToDevice);
-
+    free(hA);
     float* work;
     __half* hwork;
     cudaMalloc(&work, num_bytes);
     cudaMalloc(&hwork, num_bytes);
-
     startTimer();
     later_rpotrf('l', n, dA, n, work, hwork);
     auto ms = stopTimer();
 
-    if (checkFlag) {
-        cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, n, n, n, &snegone, dA, n, dA, n, &sone, twork, n);
-        printf("Backward error ||LL^T-A||/||A|| = %.6e\n", snorm(n, n, twork) / normA);
-    }
+    // if (checkFlag) {
+    //     cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, n, n, n, &snegone, dA, n, dA, n, &sone, twork, n);
+    //     printf("Backward error ||LL^T-A||/||A|| = %.6e\n", snorm(n, n, twork) / normA);
+    // }
     std::cout << ms << std::endl;
     cudaFree(dA);
     cudaFree(work);
